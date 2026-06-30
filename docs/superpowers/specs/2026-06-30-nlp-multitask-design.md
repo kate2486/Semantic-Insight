@@ -1,4 +1,4 @@
-# NLP多任务学习实训项目 — 设计文档
+# Semantic-Insight — 设计文档
 
 **日期**: 2026-06-30  
 **作者**: 芝士番薯  
@@ -26,7 +26,7 @@
 ## 2. 项目目录结构
 
 ```
-nlp-multitask/
+Semantic-Insight/
 ├── data/                          # 数据目录
 │   ├── raw/                       # 原始下载数据
 │   ├── processed/                 # 清洗后的数据

@@ -1,8 +1,8 @@
-# NLP多任务学习实训项目 — 实现计划
+# Semantic-Insight — 实现计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 5天内构建一个共享BERT编码器的双任务NLP系统（文本分类 + 命名实体识别）+ Gradio演示界面
+**Goal:** 5天内构建 Semantic-Insight：基于共享BERT编码器的双任务NLP系统（文本分类 + 命名实体识别）+ Gradio演示界面
 
 **Architecture:** 共享 `bert-base-chinese` 作为编码器，上层分接分类头（[CLS]向量→Linear→10类别）和NER标注头（每Token向量→Linear→CRF→BIO标签序列），通过 `main.py` 统一训练/评估/推理入口，`Gradio` 提供Web交互界面。
 
@@ -2499,7 +2499,7 @@ def create_demo():
     with gr.Blocks(title="NLP多任务学习系统", theme=gr.themes.Soft()) as demo:
         gr.Markdown(
             """
-            # 🧠 NLP多任务学习系统
+            # 🧠 Semantic-Insight
             基于 BERT 的文本分类 + 命名实体识别 联合推理
             """
         )
@@ -2582,7 +2582,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - [ ] **Step 1: 编写 README.md**
 
 ```markdown
-# NLP多任务学习实训项目
+# Semantic-Insight
 
 基于 PyTorch + BERT 的中文双任务NLP系统：**文本分类** + **命名实体识别**。
 
@@ -2638,7 +2638,7 @@ python main.py demo
 - [ ] **Step 2: 编写 docs/report.md**
 
 ```markdown
-# NLP多任务学习实训报告
+# Semantic-Insight 实训报告
 
 ## 摘要
 本项目基于共享BERT编码器，实现了文本分类和命名实体识别两个NLP任务的联合训练和推理...
