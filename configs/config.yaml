@@ -1,0 +1,51 @@
+# 共享编码器配置
+encoder:
+  model_name: "bert-base-chinese"
+  max_length: 256
+  freeze_embeddings: true
+  freeze_layers: 6  # 冻结前6层Transformer
+
+# 文本分类配置
+classifier:
+  num_classes: 10
+  label_names: ["体育", "财经", "科技", "教育", "时尚", "军事", "游戏", "房产", "娱乐", "时政"]
+  dropout: 0.1
+  learning_rate: 2e-5
+  batch_size: 32
+  epochs: 5
+  warmup_ratio: 0.1
+
+# NER配置
+ner:
+  num_tags: 7
+  tag2id:
+    O: 0
+    B-PER: 1
+    I-PER: 2
+    B-LOC: 3
+    I-LOC: 4
+    B-ORG: 5
+    I-ORG: 6
+  id2tag: ["O", "B-PER", "I-PER", "B-LOC", "I-LOC", "B-ORG", "I-ORG"]
+  dropout: 0.1
+  learning_rate: 3e-5
+  batch_size: 16
+  epochs: 10
+  warmup_ratio: 0.1
+
+# 训练通用配置
+training:
+  seed: 42
+  gradient_accumulation_steps: 2
+  max_grad_norm: 1.0
+  eval_steps: 200
+  save_steps: 500
+  logging_steps: 50
+
+# 数据配置
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
