@@ -37,3 +37,39 @@ def test_encoder_trainable_params_exist(encoder):
     """测试存在可训练参数（后6层）"""
     trainable = sum(1 for p in encoder.bert.parameters() if p.requires_grad)
     assert trainable > 0, "Should have some trainable parameters (later layers)"
+
+
+def test_classifier_forward(encoder):
+    """测试分类头前向传播"""
+    from src.models.classifier import TextClassifier
+
+    model = TextClassifier(encoder, num_classes=10)
+
+    batch_size, seq_len = 4, 128
+    input_ids = torch.randint(100, 20000, (batch_size, seq_len))
+    attention_mask = torch.ones(batch_size, seq_len)
+    labels = torch.randint(0, 10, (batch_size,))
+
+    output = model(input_ids, attention_mask, label=labels)
+    assert "loss" in output
+    assert "logits" in output
+    assert output["logits"].shape == (batch_size, 10)
+    assert output["loss"].requires_grad
+
+
+def test_classifier_inference(encoder):
+    """测试分类头推理模式（无标签）"""
+    from src.models.classifier import TextClassifier
+
+    model = TextClassifier(encoder, num_classes=10)
+    model.eval()
+
+    batch_size, seq_len = 4, 128
+    input_ids = torch.randint(100, 20000, (batch_size, seq_len))
+    attention_mask = torch.ones(batch_size, seq_len)
+
+    with torch.no_grad():
+        output = model(input_ids, attention_mask)
+
+    assert output["loss"] is None
+    assert output["logits"].shape == (batch_size, 10)
