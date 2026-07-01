@@ -35,25 +35,25 @@ class Trainer:
         self.checkpoint_dir = checkpoint_dir
         os.makedirs(checkpoint_dir, exist_ok=True)
 
-        # 优化器
+        # 优化器 (float() 防止 YAML 将科学计数法解析为字符串)
         self.optimizer = AdamW(
             model.parameters(),
-            lr=config.get("learning_rate", 2e-5),
+            lr=float(config.get("learning_rate", 2e-5)),
         )
 
         # 学习率调度器
-        total_steps = len(train_dataloader) * config.get("epochs", 5)
-        warmup_steps = int(total_steps * config.get("warmup_ratio", 0.1))
+        total_steps = len(train_dataloader) * int(config.get("epochs", 5))
+        warmup_steps = int(total_steps * float(config.get("warmup_ratio", 0.1)))
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
             num_warmup_steps=warmup_steps,
             num_training_steps=total_steps,
         )
 
-        self.gradient_accumulation_steps = config.get("gradient_accumulation_steps", 1)
-        self.max_grad_norm = config.get("max_grad_norm", 1.0)
-        self.epochs = config.get("epochs", 5)
-        self.eval_steps = config.get("eval_steps", 200)
+        self.gradient_accumulation_steps = int(config.get("gradient_accumulation_steps", 1))
+        self.max_grad_norm = float(config.get("max_grad_norm", 1.0))
+        self.epochs = int(config.get("epochs", 5))
+        self.eval_steps = int(config.get("eval_steps", 200))
 
         # 训练记录
         self.history = {"train_loss": [], "val_loss": [], "val_metric": []}
