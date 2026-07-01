@@ -67,12 +67,12 @@ def test_ner_dataset_length(tokenizer, sample_ner_data):
 
 
 def test_ner_dataset_cls_label(tokenizer, sample_ner_data):
-    """测试NER数据集[CLS]标签为-100"""
+    """测试NER数据集[CLS]标签为O（0）"""
     tag2id = {"O": 0, "B-PER": 1, "B-LOC": 2}
     ds = NERDataset(sample_ner_data, tokenizer, tag2id, max_length=128)
     batch = ds[0]
     assert "input_ids" in batch
     assert "labels" in batch
     assert batch["labels"].shape[0] == 128
-    # [CLS]是第一个token，标签应为-100
-    assert batch["labels"][0] == -100
+    # [CLS]是第一个token，标签应为O（0）
+    assert batch["labels"][0] == 0

@@ -88,9 +88,9 @@ class NERDataset(Dataset):
         aligned_tokens = aligned_tokens[:max_len]
         aligned_tags = aligned_tags[:max_len]
 
-        # 添加特殊 token
+        # 添加特殊 token（CRF不支持-100，[CLS]/[SEP]用O标签）
         input_tokens = ["[CLS]"] + aligned_tokens + ["[SEP]"]
-        label_ids = [-100] + aligned_tags + [-100]  # [CLS]和[SEP]用-100忽略
+        label_ids = [0] + aligned_tags + [0]  # [CLS]和[SEP]标签为O
 
         # 转成 ID
         input_ids = self.tokenizer.convert_tokens_to_ids(input_tokens)
@@ -100,7 +100,7 @@ class NERDataset(Dataset):
         pad_len = self.max_length - len(input_ids)
         input_ids += [self.tokenizer.pad_token_id] * pad_len
         attention_mask += [0] * pad_len
-        label_ids += [-100] * pad_len
+        label_ids += [0] * pad_len
 
         return {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),

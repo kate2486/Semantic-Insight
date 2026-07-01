@@ -73,3 +73,40 @@ def test_classifier_inference(encoder):
 
     assert output["loss"] is None
     assert output["logits"].shape == (batch_size, 10)
+
+
+def test_ner_tagger_train_mode(encoder):
+    """测试NER标注头训练模式"""
+    from src.models.ner_tagger import NERTagger
+
+    model = NERTagger(encoder, num_tags=7)
+
+    batch_size, seq_len = 4, 64
+    input_ids = torch.randint(100, 20000, (batch_size, seq_len))
+    attention_mask = torch.ones(batch_size, seq_len)
+    labels = torch.randint(0, 7, (batch_size, seq_len))
+
+    output = model(input_ids, attention_mask, labels=labels)
+    assert "loss" in output
+    assert output["loss"].requires_grad
+
+
+def test_ner_tagger_inference_mode(encoder):
+    """测试NER标注头推理模式"""
+    from src.models.ner_tagger import NERTagger
+
+    model = NERTagger(encoder, num_tags=7)
+    model.eval()
+
+    batch_size, seq_len = 4, 64
+    input_ids = torch.randint(100, 20000, (batch_size, seq_len))
+    attention_mask = torch.ones(batch_size, seq_len)
+
+    with torch.no_grad():
+        output = model(input_ids, attention_mask, labels=None)
+
+    assert "predictions" in output
+    assert len(output["predictions"]) == batch_size
+    # 每个预测序列长度应 ≤ seq_len
+    for pred_seq in output["predictions"]:
+        assert len(pred_seq) <= seq_len
