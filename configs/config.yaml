@@ -12,7 +12,7 @@ classifier:
   dropout: 0.1
   learning_rate: 2e-5
   batch_size: 32
-  epochs: 5
+  epochs: 3
   warmup_ratio: 0.1
 
 # NER配置
@@ -30,7 +30,7 @@ ner:
   dropout: 0.1
   learning_rate: 3e-5
   batch_size: 16
-  epochs: 10
+  epochs: 5
   warmup_ratio: 0.1
 
 # 训练通用配置

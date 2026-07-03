@@ -29,7 +29,7 @@ class Trainer:
         self.config = config
 
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"使用设备: {self.device}")
+        print(f"Device: {self.device}")
         self.model.to(self.device)
 
         self.checkpoint_dir = checkpoint_dir
@@ -64,7 +64,7 @@ class Trainer:
         task_type: "classification" 或 "ner"
         """
         global_step = 0
-        best_metric = 0.0
+        best_metric = -1.0  # -1 ensures first eval always saves checkpoint
 
         for epoch in range(self.epochs):
             self.model.train()
@@ -119,13 +119,27 @@ class Trainer:
                     if val_metric > best_metric:
                         best_metric = val_metric
                         self.save_checkpoint(f"best_{task_type}.pt")
-                        print(f"  [新最佳模型] {metric_name}: {val_metric:.4f}")
+                        print(f"  [New best] {metric_name}: {val_metric:.4f}")
 
                     self.model.train()
 
             avg_loss = epoch_loss / len(self.train_dl)
             self.history["train_loss"].append(avg_loss)
-            print(f"Epoch {epoch + 1} 完成, 平均loss: {avg_loss:.4f}")
+            print(f"Epoch {epoch + 1} done, avg loss: {avg_loss:.4f}")
+
+            # Always evaluate at end of epoch (fallback for small datasets)
+            if global_step == 0 or global_step % self.eval_steps != 0:
+                val_loss, val_metric = self.evaluate(task_type)
+                self.history["val_loss"].append(val_loss)
+                self.history["val_metric"].append(val_metric)
+
+                metric_name = "acc" if task_type == "classification" else "f1"
+                if val_metric > best_metric:
+                    best_metric = val_metric
+                    self.save_checkpoint(f"best_{task_type}.pt")
+                    print(f"  [New best] {metric_name}: {val_metric:.4f}")
+                else:
+                    print(f"  Val {metric_name}: {val_metric:.4f} (best: {best_metric:.4f})")
 
         return self.history
 

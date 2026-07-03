@@ -36,13 +36,12 @@ class NERTagger(nn.Module):
         mask = attention_mask.bool()
 
         loss = None
-        predictions = None
 
         if labels is not None:
-            # 训练模式: 计算 CRF 负对数似然
+            # Training mode: compute CRF negative log-likelihood
             loss = -self.crf(emissions, labels, mask=mask, reduction="mean")
-        else:
-            # 推理模式: CRF 维特比解码
-            predictions = self.crf.decode(emissions, mask=mask)
+
+        # Always decode for evaluation (even during training)
+        predictions = self.crf.decode(emissions, mask=mask)
 
         return {"loss": loss, "predictions": predictions, "emissions": emissions}
