@@ -42,6 +42,27 @@ def main():
     print("创建 DataLoader...")
     dataloaders, tokenizer = create_dataloaders(processed_dir, config)
 
+    # 计算类别权重（处理标签不平衡）
+    import json
+    from collections import Counter
+    ner_train_path = os.path.join(processed_dir, "ner_train.json")
+    with open(ner_train_path, "r", encoding="utf-8") as f:
+        ner_train_data = json.load(f)
+    tag_counts = Counter()
+    for sample in ner_train_data:
+        for tag in sample["tags"]:
+            tag_counts[tag] += 1
+    total_tags = sum(tag_counts.values())
+    tag2id = config["ner"]["tag2id"]
+    # 使用 inverse frequency 作为权重，O 标签降权，实体标签加权
+    class_weights = []
+    id2tag_sorted = sorted(tag2id.items(), key=lambda x: x[1])
+    for tag_name, tag_id in id2tag_sorted:
+        count = tag_counts.get(tag_name, 1)
+        weight = total_tags / (len(tag2id) * count)
+        class_weights.append(weight)
+    print(f"类别权重: {[f'{id2tag_sorted[i][0]}:{w:.2f}' for i, w in enumerate(class_weights)]}")
+
     # 创建模型
     print("\n创建模型...")
     encoder = SharedEncoder(
@@ -53,6 +74,8 @@ def main():
         encoder=encoder,
         num_tags=config["ner"]["num_tags"],
         dropout=config["ner"]["dropout"],
+        use_crf=False,
+        class_weights=class_weights,
     )
 
     print(f"NER模型可训练参数量: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")

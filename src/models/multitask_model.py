@@ -93,7 +93,12 @@ class MultiTaskModel:
                     self.ner_head.dropout(encoded["last_hidden_state"])
                 )
                 mask = attention_mask.bool()
-                predictions = self.ner_head.crf.decode(emissions, mask=mask)[0]
+                if self.ner_head.use_crf:
+                    predictions = self.ner_head.crf.decode(emissions, mask=mask)[0]
+                else:
+                    pred_ids = torch.argmax(emissions, dim=-1)[0]
+                    valid_len = mask[0].sum().item()
+                    predictions = pred_ids[:valid_len].tolist()
 
                 # 解析实体
                 valid_len = attention_mask[0].sum().item()
@@ -110,7 +115,7 @@ class MultiTaskModel:
         current_type = None
 
         for i, (token, tag_id) in enumerate(zip(tokens, tag_ids)):
-            tag = self.id2tag[tag_id] if tag_id < len(self.id2tag) else "O"
+            tag = self.id2tag[tag_id] if 0 <= tag_id < len(self.id2tag) else "O"
 
             if tag.startswith("B-"):
                 if current_tokens:
@@ -166,14 +171,14 @@ class MultiTaskModel:
         classifier_head = TextClassifier(
             encoder, num_classes=config["classifier"]["num_classes"]
         )
-        ner_head = NERTagger(encoder, num_tags=config["ner"]["num_tags"])
+        ner_head = NERTagger(encoder, num_tags=config["ner"]["num_tags"], use_crf=False)
 
         checkpoint = torch.load(path, map_location="cpu")
         encoder.load_state_dict(checkpoint["encoder"])
         if checkpoint["classifier"]:
             classifier_head.load_state_dict(checkpoint["classifier"])
         if checkpoint["ner"]:
-            ner_head.load_state_dict(checkpoint["ner"])
+            ner_head.load_state_dict(checkpoint["ner"], strict=False)
 
         return cls(
             encoder=encoder,

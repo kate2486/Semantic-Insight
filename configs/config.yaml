@@ -1,9 +1,10 @@
+
 # 共享编码器配置
 encoder:
   model_name: "bert-base-chinese"
   max_length: 256
-  freeze_embeddings: true
-  freeze_layers: 6  # 冻结前6层Transformer
+  freeze_embeddings: false
+  freeze_layers: 0  # NER需要更多层级微调，全部解冻
 
 # 文本分类配置
 classifier:
@@ -28,9 +29,9 @@ ner:
     I-ORG: 6
   id2tag: ["O", "B-PER", "I-PER", "B-LOC", "I-LOC", "B-ORG", "I-ORG"]
   dropout: 0.1
-  learning_rate: 3e-5
+  learning_rate: 5e-5
   batch_size: 16
-  epochs: 5
+  epochs: 20
   warmup_ratio: 0.1
 
 # 训练通用配置

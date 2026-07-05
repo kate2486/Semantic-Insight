@@ -40,9 +40,9 @@ def load_models():
         classifier_head = None
         print("分类模型未找到")
 
-    ner_head = NERTagger(encoder, num_tags=config["ner"]["num_tags"])
+    ner_head = NERTagger(encoder, num_tags=config["ner"]["num_tags"], use_crf=False)
     if os.path.exists(ner_path):
-        ner_head.load_state_dict(torch.load(ner_path, map_location="cpu"))
+        ner_head.load_state_dict(torch.load(ner_path, map_location="cpu"), strict=False)
         print("NER模型已加载")
     else:
         ner_head = None
