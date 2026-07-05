@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semantic Insight — NLP 多任务分析</title>
+
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║  Semantic Insight 自定义前端页面                         ║
+  ║                                                          ║
+  ║  你可以自由修改以下内容：                                 ║
+  ║  1. CSS 变量（--color-*）来改变配色方案                  ║
+  ║  2. HTML 结构来调整页面布局                              ║
+  ║  3. JavaScript 逻辑来改变交互行为                        ║
+  ║                                                          ║
+  ║  技术栈：纯 HTML + CSS + JS，零外部依赖                   ║
+  ╚══════════════════════════════════════════════════════════╝
+-->
+
+<style>
+  /* ═══════════════ CSS 变量（配色方案）═══════════════ */
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --border: #e8ecf1;
+    --shadow: 0 2px 16px rgba(0,0,0,0.06);
+
+    /* 品牌色 */
+    --primary: #4a6cf7;
+    --primary-hover: #3651d5;
+    --primary-light: #eef1ff;
+
+    /* 10 个分类标签颜色（可自定义） */
+    --color-体育: #e74c3c;
+    --color-财经: #f39c12;
+    --color-科技: #3498db;
+    --color-教育: #27ae60;
+    --color-时尚: #e91e63;
+    --color-军事: #607d8b;
+    --color-游戏: #9b59b6;
+    --color-房产: #16a085;
+    --color-娱乐: #e67e22;
+    --color-时政: #8e44ad;
+
+    /* 3 种实体类型颜色 */
+    --entity-PER:  #3498db;
+    --entity-LOC:  #27ae60;
+    --entity-ORG:  #e67e22;
+
+    /* 尺寸 */
+    --radius: 12px;
+    --max-width: 900px;
+  }
+
+  /* ═══════════════ 全局样式 ═══════════════ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 "PingFang SC", "Microsoft YaHei", "Helvetica Neue",
+                 sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ═══════════════ 布局 ═══════════════ */
+  .container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+
+  /* 卡片通用样式 */
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* ═══════════════ Header ═══════════════ */
+  .header {
+    text-align: center;
+    padding: 36px 20px 8px;
+  }
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    color: var(--text-secondary);
+    margin-top: 6px;
+    font-size: 0.95rem;
+  }
+
+  /* ═══════════════ 输入区 ═══════════════ */
+  .input-area textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 14px 16px;
+    font-size: 1rem;
+    font-family: inherit;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    resize: vertical;
+    transition: border-color 0.2s;
+    line-height: 1.7;
+  }
+  .input-area textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+  .input-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .char-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  .char-count.warn { color: #e74c3c; }
+
+  /* 按钮 */
+  .btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-outline {
+    background: #fff;
+    color: var(--text-secondary);
+    border: 2px solid var(--border);
+  }
+  .btn-outline:hover {
+    border-color: #ccc;
+    color: var(--text);
+  }
+
+  /* 加载动画（纯 CSS 旋转圆圈） */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ═══════════════ 示例标签 ═══════════════ */
+  .examples-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .example-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .example-chip {
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid transparent;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .example-chip:hover {
+    background: #dde3ff;
+    border-color: var(--primary);
+  }
+
+  /* ═══════════════ 结果区 ═══════════════ */
+  .results {
+    display: flex;
+    gap: 20px;
+  }
+  .results .card { flex: 1; margin-bottom: 0; }
+
+  /* 分类徽章 */
+  .cls-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+    margin-bottom: 14px;
+  }
+  /* 分类颜色通过 JS 动态设置 style.backgroundColor */
+
+  /* 置信度进度条 */
+  .confidence-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .confidence-bar {
+    flex: 1;
+    height: 12px;
+    background: #eee;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .confidence-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.6s ease, background 0.6s ease;
+  }
+  .confidence-text {
+    font-weight: 700;
+    font-size: 0.95rem;
+    min-width: 55px;
+    text-align: right;
+  }
+
+  /* NER 实体表格 */
+  .ner-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+  }
+  .ner-table th, .ner-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .ner-table th {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+  .entity-type-tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* 高亮原文 */
+  .highlight-text {
+    line-height: 2.2;
+    padding: 12px;
+    background: #fafbfc;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    word-break: break-all;
+  }
+  .highlight-text .hl-entity {
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 600;
+    margin: 0 1px;
+  }
+  .highlight-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 0.8rem;
+  }
+  .highlight-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  /* 空状态 */
+  .empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 30px 0;
+    font-size: 0.95rem;
+  }
+
+  /* 错误提示 */
+  .error-banner {
+    background: #fdf2f2;
+    color: #c0392b;
+    padding: 12px 18px;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    display: none;
+  }
+  .error-banner.show { display: block; }
+
+  /* 结果区域默认隐藏 */
+  #resultsSection { display: none; }
+
+  /* 淡入动画 */
+  .fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ═══════════════ Footer ═══════════════ */
+  .footer {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    padding: 30px 0;
+  }
+
+  /* ═══════════════ 响应式：移动端 ═══════════════ */
+  @media (max-width: 768px) {
+    .results {
+      flex-direction: column;
+    }
+    .header h1 { font-size: 1.5rem; }
+    .card { padding: 20px; }
+    .example-chip { max-width: 150px; font-size: 0.78rem; }
+  }
+  @media (max-width: 480px) {
+    .container { padding: 12px 10px 40px; }
+    .input-meta { flex-direction: column; align-items: flex-start; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══════════ Header ═══════════ -->
+  <div class="header">
+    <h1>Semantic Insight</h1>
+    <p>基于 BERT 的中文文本分类 + 命名实体识别 — 联合推理演示</p>
+  </div>
+
+  <!-- ═══════════ 错误提示 ═══════════ -->
+  <div id="errorBanner" class="error-banner"></div>
+
+  <!-- ═══════════ 输入卡片 ═══════════ -->
+  <div class="card input-area">
+    <textarea
+      id="inputText"
+      placeholder="请输入中文文本进行分析，例如：华为技术有限公司在深圳举办了2024年开发者大会"
+      maxlength="256"
+      rows="4"
+    ></textarea>
+
+    <div class="input-meta">
+      <span class="char-count" id="charCount">已输入 0 / 256 字</span>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" id="submitBtn" onclick="submitText()">
+          🔍 分析
+        </button>
+        <button class="btn btn-outline" onclick="clearAll()">
+          🗑 清除
+        </button>
+      </div>
+    </div>
+
+    <!-- 示例文本快捷填充 -->
+    <div class="examples-label">📌 点击示例快速填充：</div>
+    <div class="example-chips">
+      <span class="example-chip" onclick="fillExample('华为技术有限公司在深圳举办了2024年开发者大会')">
+        华为在深圳举办开发者大会
+      </span>
+      <span class="example-chip" onclick="fillExample('今天NBA总决赛，洛杉矶湖人队大胜波士顿凯尔特人')">
+        NBA总决赛湖人胜凯尔特人
+      </span>
+      <span class="example-chip" onclick="fillExample('央行宣布降息50个基点，A股市场大幅反弹')">
+        央行降息A股反弹
+      </span>
+      <span class="example-chip" onclick="fillExample('北京大学和清华大学联合举办人工智能论坛')">
+        北大清华联合AI论坛
+      </span>
+    </div>
+  </div>
+
+  <!-- ═══════════ 结果区域 ═══════════ -->
+  <div class="results" id="resultsSection">
+    <!-- 分类结果卡片 -->
+    <div class="card" id="clsCard">
+      <h3 style="margin-bottom:12px;">📂 文本分类</h3>
+      <div id="clsContent">
+        <div class="empty-state">等待分析...</div>
+      </div>
+    </div>
+
+    <!-- NER 结果卡片 -->
+    <div class="card" id="nerCard">
+      <h3 style="margin-bottom:12px;">🏷 命名实体识别</h3>
+      <div id="nerContent">
+        <div class="empty-state">等待分析...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Footer ═══════════ -->
+  <div class="footer">
+    Semantic Insight — 基于 PyTorch + BERT-base-chinese 的多任务 NLP 系统
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  JavaScript 逻辑（可自由修改）                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<script>
+  /* ── 10 个分类的颜色映射 ── */
+  const CATEGORY_COLORS = {
+    "体育": "#e74c3c",
+    "财经": "#f39c12",
+    "科技": "#3498db",
+    "教育": "#27ae60",
+    "时尚": "#e91e63",
+    "军事": "#607d8b",
+    "游戏": "#9b59b6",
+    "房产": "#16a085",
+    "娱乐": "#e67e22",
+    "时政": "#8e44ad",
+  };
+
+  /* ── 3 种实体类型的颜色 ── */
+  const ENTITY_COLORS = {
+    "PER": "#3498db",
+    "LOC": "#27ae60",
+    "ORG": "#e67e22",
+  };
+
+  /* ── 工具函数 ── */
+  function showError(msg) {
+    const banner = document.getElementById("errorBanner");
+    banner.textContent = "⚠ " + msg;
+    banner.classList.add("show");
+    setTimeout(() => banner.classList.remove("show"), 5000);
+  }
+
+  /* ── 字符计数 ── */
+  document.getElementById("inputText").addEventListener("input", function() {
+    const len = this.value.length;
+    const el = document.getElementById("charCount");
+    el.textContent = `已输入 ${len} / 256 字`;
+    el.className = len > 240 ? "char-count warn" : "char-count";
+  });
+
+  /* ── 键盘快捷键：Ctrl+Enter 提交 ── */
+  document.getElementById("inputText").addEventListener("keydown", function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      submitText();
+    }
+  });
+
+  /* ── 填充示例 ── */
+  function fillExample(text) {
+    const ta = document.getElementById("inputText");
+    ta.value = text;
+    ta.dispatchEvent(new Event("input"));
+    ta.focus();
+  }
+
+  /* ── 清除 ── */
+  function clearAll() {
+    document.getElementById("inputText").value = "";
+    document.getElementById("charCount").textContent = "已输入 0 / 256 字";
+    document.getElementById("charCount").className = "char-count";
+    document.getElementById("resultsSection").style.display = "none";
+    document.getElementById("errorBanner").classList.remove("show");
+  }
+
+  /* ── 提交分析 ── */
+  async function submitText() {
+    const text = document.getElementById("inputText").value.trim();
+    if (!text) {
+      showError("请先输入文本");
+      return;
+    }
+
+    // 加载状态
+    const btn = document.getElementById("submitBtn");
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 分析中...';
+    document.getElementById("errorBanner").classList.remove("show");
+
+    try {
+      const resp = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+
+      // 显示结果
+      document.getElementById("resultsSection").style.display = "flex";
+      renderClassification(data.classification);
+      renderEntities(data.entities, data.text);
+
+      // 动画
+      document.getElementById("clsCard").classList.add("fade-in");
+      document.getElementById("nerCard").classList.add("fade-in");
+    } catch (err) {
+      showError("请求失败：" + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+    }
+  }
+
+  /* ── 渲染分类结果 ── */
+  function renderClassification(cls) {
+    const container = document.getElementById("clsContent");
+    if (!cls) {
+      container.innerHTML = '<div class="empty-state">分类模型未加载</div>';
+      return;
+    }
+
+    const color = CATEGORY_COLORS[cls.label] || "#7f8c8d";
+    const pct = (cls.confidence * 100).toFixed(1);
+
+    container.innerHTML = `
+      <div class="cls-badge" style="background:${color}">${cls.label}</div>
+      <div class="confidence-bar-wrap">
+        <div class="confidence-bar">
+          <div class="confidence-bar-fill"
+               style="width:${pct}%; background:${color}"></div>
+        </div>
+        <span class="confidence-text">${pct}%</span>
+      </div>
+    `;
+  }
+
+  /* ── 渲染 NER 结果 ── */
+  function renderEntities(entities, originalText) {
+    const container = document.getElementById("nerContent");
+    if (!entities) {
+      container.innerHTML = '<div class="empty-state">NER 模型未加载</div>';
+      return;
+    }
+
+    if (entities.length === 0) {
+      container.innerHTML = '<div class="empty-state">未识别到实体</div>';
+      return;
+    }
+
+    // 实体表格
+    let tableHTML = `
+      <table class="ner-table">
+        <thead><tr><th>实体</th><th>类型</th><th>位置</th></tr></thead>
+        <tbody>
+    `;
+    entities.forEach(ent => {
+      const color = ENTITY_COLORS[ent.type] || "#95a5a6";
+      tableHTML += `
+        <tr>
+          <td><strong>${escapeHTML(ent.word)}</strong></td>
+          <td><span class="entity-type-tag" style="background:${color}">${ent.type}</span></td>
+          <td>${ent.start}–${ent.end}</td>
+        </tr>
+      `;
+    });
+    tableHTML += "</tbody></table>";
+
+    // 高亮原文（简单版：按位置标记）
+    // 按 start 排序以便正确高亮
+    const sorted = [...entities].sort((a, b) => a.start - b.start);
+    let highlighted = "";
+    let pos = 0;
+    sorted.forEach(ent => {
+      if (ent.start > pos) {
+        highlighted += escapeHTML(originalText.slice(pos, ent.start));
+      }
+      const color = ENTITY_COLORS[ent.type] || "#95a5a6";
+      highlighted += `<span class="hl-entity" style="background:${color}">${escapeHTML(originalText.slice(ent.start, ent.end))}</span>`;
+      pos = ent.end;
+    });
+    if (pos < originalText.length) {
+      highlighted += escapeHTML(originalText.slice(pos));
+    }
+
+    container.innerHTML = `
+      ${tableHTML}
+      <div style="font-weight:600;font-size:0.82rem;color:var(--text-secondary);margin-bottom:6px;">📝 高亮原文</div>
+      <div class="highlight-text">${highlighted}</div>
+      <div class="highlight-legend">
+        <span><span class="legend-dot" style="background:${ENTITY_COLORS.PER}"></span> 人名</span>
+        <span><span class="legend-dot" style="background:${ENTITY_COLORS.LOC}"></span> 地名</span>
+        <span><span class="legend-dot" style="background:${ENTITY_COLORS.ORG}"></span> 机构</span>
+      </div>
+    `;
+  }
+
+  /* ── HTML 转义 ── */
+  function escapeHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>

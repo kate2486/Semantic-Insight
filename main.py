@@ -6,6 +6,8 @@
   python main.py train --task all         # 训练两个模型
   python main.py predict --text "..."     # 单条推理
   python main.py demo                     # 启动Gradio界面
+  python main.py serve                    # 启动FastAPI Web服务
+  python main.py serve --reload           # 开发模式（热重载）
 """
 import os
 import sys
@@ -110,6 +112,24 @@ def cmd_demo(args):
     run_demo()
 
 
+def cmd_serve(args):
+    """启动FastAPI Web服务（自定义前端）"""
+    import uvicorn
+    host = args.host
+    port = args.port
+    print(f"\n{'=' * 50}")
+    print(f"  启动 FastAPI 服务器")
+    print(f"  前端页面: http://{host}:{port}")
+    print(f"  API文档:  http://{host}:{port}/docs")
+    print(f"{'=' * 50}\n")
+    uvicorn.run(
+        "src.app.server:app",
+        host=host,
+        port=port,
+        reload=args.reload,
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="NLP多任务学习系统 — Semantic-Insight")
     subparsers = parser.add_subparsers(dest="command", help="子命令")
@@ -128,6 +148,12 @@ def main():
     # demo
     subparsers.add_parser("demo", help="启动Gradio Web演示")
 
+    # serve
+    serve_parser = subparsers.add_parser("serve", help="启动FastAPI Web服务（自定义前端）")
+    serve_parser.add_argument("--host", type=str, default="127.0.0.1", help="绑定地址")
+    serve_parser.add_argument("--port", type=int, default=8000, help="绑定端口")
+    serve_parser.add_argument("--reload", action="store_true", help="启用热重载（开发模式）")
+
     args = parser.parse_args()
 
     if args.command == "train":
@@ -136,6 +162,8 @@ def main():
         cmd_predict(args)
     elif args.command == "demo":
         cmd_demo(args)
+    elif args.command == "serve":
+        cmd_serve(args)
     else:
         parser.print_help()
 
