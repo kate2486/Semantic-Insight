@@ -39,3 +39,4 @@ Thumbs.db
 # Misc
 *.log
 wandb/
+bert_tokenizer_cache/
