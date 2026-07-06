@@ -27,7 +27,137 @@ sys.path.insert(0, PROJECT_ROOT)
 from src.models.encoder import SharedEncoder
 from src.models.classifier import TextClassifier
 from src.models.ner_tagger import NERTagger
-from src.models.multitask_model import MultiTaskModel
+
+
+# ── 双 Encoder 推理模型 ─────────────────────────────────────────
+
+class DualEncoderModel:
+    """分类和 NER 各使用独立的 encoder，避免权重冲突"""
+
+    def __init__(
+        self,
+        cls_encoder: SharedEncoder,
+        classifier_head: TextClassifier,
+        ner_encoder: SharedEncoder,
+        ner_head: NERTagger,
+        label_names: list,
+        id2tag: list,
+        max_length: int = 256,
+    ):
+        self.cls_encoder = cls_encoder
+        self.classifier_head = classifier_head
+        self.ner_encoder = ner_encoder
+        self.ner_head = ner_head
+        self.label_names = label_names
+        self.id2tag = id2tag
+        self.max_length = max_length
+
+        from transformers import BertTokenizer
+        self.tokenizer = BertTokenizer.from_pretrained(
+            "bert-base-chinese", local_files_only=True
+        )
+
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.cls_encoder.to(self.device)
+        self.ner_encoder.to(self.device)
+        if self.classifier_head:
+            self.classifier_head.to(self.device)
+        if self.ner_head:
+            self.ner_head.to(self.device)
+
+        self.cls_encoder.eval()
+        self.ner_encoder.eval()
+        if self.classifier_head:
+            self.classifier_head.eval()
+        if self.ner_head:
+            self.ner_head.eval()
+
+    def predict(self, text: str) -> dict:
+        encoding = self.tokenizer(
+            text,
+            max_length=self.max_length,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt",
+        )
+        input_ids = encoding["input_ids"].to(self.device)
+        attention_mask = encoding["attention_mask"].to(self.device)
+
+        result = {"text": text}
+
+        with torch.no_grad():
+            # ── 分类（使用分类 encoder）──
+            if self.classifier_head is not None:
+                cls_encoded = self.cls_encoder(input_ids, attention_mask)
+                logits = self.classifier_head.classifier(
+                    self.classifier_head.dropout(cls_encoded["pooler_output"])
+                )
+                probs = torch.softmax(logits, dim=-1)[0]
+                pred_idx = torch.argmax(probs).item()
+                result["classification"] = {
+                    "label": self.label_names[pred_idx],
+                    "confidence": round(probs[pred_idx].item(), 4),
+                }
+
+            # ── NER（使用 NER encoder）──
+            if self.ner_head is not None:
+                ner_encoded = self.ner_encoder(input_ids, attention_mask)
+                emissions = self.ner_head.linear(
+                    self.ner_head.dropout(ner_encoded["last_hidden_state"])
+                )
+                mask = attention_mask.bool()
+                pred_ids = torch.argmax(emissions, dim=-1)[0]
+                valid_len = mask[0].sum().item()
+                predictions = pred_ids[:valid_len].tolist()
+
+                tokens = self.tokenizer.convert_ids_to_tokens(input_ids[0])
+                entities = self._parse_bio(
+                    tokens[1:valid_len - 1], predictions[1:valid_len - 1]
+                )
+                result["entities"] = entities
+
+        return result
+
+    def _parse_bio(self, tokens: list, tag_ids: list) -> list:
+        entities = []
+        current_tokens = []
+        current_type = None
+
+        for i, (token, tag_id) in enumerate(zip(tokens, tag_ids)):
+            tag = self.id2tag[tag_id] if 0 <= tag_id < len(self.id2tag) else "O"
+
+            if tag.startswith("B-"):
+                if current_tokens:
+                    entities.append({
+                        "word": "".join(current_tokens).replace("##", ""),
+                        "type": current_type,
+                        "start": i - len(current_tokens),
+                        "end": i,
+                    })
+                current_type = tag[2:]
+                current_tokens = [token]
+            elif tag.startswith("I-") and current_type == tag[2:]:
+                current_tokens.append(token)
+            else:
+                if current_tokens:
+                    entities.append({
+                        "word": "".join(current_tokens).replace("##", ""),
+                        "type": current_type,
+                        "start": i - len(current_tokens),
+                        "end": i,
+                    })
+                current_tokens = []
+                current_type = None
+
+        if current_tokens:
+            entities.append({
+                "word": "".join(current_tokens).replace("##", ""),
+                "type": current_type,
+                "start": len(tokens) - len(current_tokens),
+                "end": len(tokens),
+            })
+
+        return entities
 
 
 # ── Pydantic 数据模型 ──────────────────────────────────────────
@@ -60,24 +190,23 @@ class PredictResponse(BaseModel):
 
 # ── 模型加载 ────────────────────────────────────────────────────
 
-def load_models() -> MultiTaskModel:
-    """加载已训练的模型（与 demo.py 逻辑一致）"""
+def load_models() -> "DualEncoderModel":
+    """加载已训练的模型 — 分类和NER各用独立的encoder"""
     config_path = os.path.join(PROJECT_ROOT, "configs", "config.yaml")
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    encoder = SharedEncoder(
+    cls_path = os.path.join(PROJECT_ROOT, "checkpoints", "best_classification.pt")
+    ner_path = os.path.join(PROJECT_ROOT, "checkpoints", "best_ner.pt")
+
+    # ── 分类模型（独立 encoder）──
+    cls_encoder = SharedEncoder(
         model_name=config["encoder"]["model_name"],
         freeze_embeddings=False,
         freeze_layers=0,
     )
-
-    cls_path = os.path.join(PROJECT_ROOT, "checkpoints", "best_classification.pt")
-    ner_path = os.path.join(PROJECT_ROOT, "checkpoints", "best_ner.pt")
-
-    # 分类头
     classifier_head = TextClassifier(
-        encoder, num_classes=config["classifier"]["num_classes"]
+        cls_encoder, num_classes=config["classifier"]["num_classes"]
     )
     if os.path.exists(cls_path):
         classifier_head.load_state_dict(
@@ -88,25 +217,32 @@ def load_models() -> MultiTaskModel:
         classifier_head = None
         print("⚠ 分类模型未找到")
 
-    # NER 头
+    # ── NER 模型（独立 encoder）──
+    ner_encoder = SharedEncoder(
+        model_name=config["encoder"]["model_name"],
+        freeze_embeddings=False,
+        freeze_layers=0,
+    )
     ner_head = NERTagger(
-        encoder,
+        ner_encoder,
         num_tags=config["ner"]["num_tags"],
-        use_crf=False,  # 与训练时保持一致
+        use_crf=False,
     )
     if os.path.exists(ner_path):
         ner_head.load_state_dict(
             torch.load(ner_path, map_location="cpu"),
-            strict=False,  # 检查点包含 ce_loss.weight buffer
+            strict=False,
         )
         print("NER 模型已加载")
     else:
         ner_head = None
         print("⚠ NER 模型未找到")
 
-    model = MultiTaskModel(
-        encoder=encoder,
+    # ── 双 encoder 推理模型 ──
+    model = DualEncoderModel(
+        cls_encoder=cls_encoder,
         classifier_head=classifier_head,
+        ner_encoder=ner_encoder,
         ner_head=ner_head,
         label_names=config["classifier"]["label_names"],
         id2tag=config["ner"]["id2tag"],

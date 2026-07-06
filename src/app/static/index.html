@@ -3,11 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Semantic Insight — NLP 多任务分析</title>
+<title>语义洞察 — NLP 多任务分析</title>
+
+<!-- Google Fonts: Ma Shan Zheng (行楷风格) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 
 <!--
   ╔══════════════════════════════════════════════════════════╗
-  ║  Semantic Insight 自定义前端页面                         ║
+  ║  语义洞察 自定义前端页面                                ║
   ║                                                          ║
   ║  你可以自由修改以下内容：                                 ║
   ║  1. CSS 变量（--color-*）来改变配色方案                  ║
@@ -15,40 +20,41 @@
   ║  3. JavaScript 逻辑来改变交互行为                        ║
   ║                                                          ║
   ║  技术栈：纯 HTML + CSS + JS，零外部依赖                   ║
+  ║  配色：莫兰迪色系 (Morandi Palette)                       ║
   ╚══════════════════════════════════════════════════════════╝
 -->
 
 <style>
-  /* ═══════════════ CSS 变量（配色方案）═══════════════ */
+  /* ═══════════════ CSS 变量（莫兰迪配色方案）═══════════════ */
   :root {
-    --bg: #f5f7fa;
-    --card-bg: #ffffff;
-    --text: #2c3e50;
-    --text-secondary: #7f8c8d;
-    --border: #e8ecf1;
-    --shadow: 0 2px 16px rgba(0,0,0,0.06);
+    --bg: #ede8e0;
+    --card-bg: #faf7f2;
+    --text: #4a4458;
+    --text-secondary: #8c8695;
+    --border: #ddd8cf;
+    --shadow: 0 2px 16px rgba(0,0,0,0.05);
 
-    /* 品牌色 */
-    --primary: #4a6cf7;
-    --primary-hover: #3651d5;
-    --primary-light: #eef1ff;
+    /* 品牌色 — 莫兰迪灰蓝 */
+    --primary: #8b9aab;
+    --primary-hover: #6b7d92;
+    --primary-light: #e8ecf0;
 
-    /* 10 个分类标签颜色（可自定义） */
-    --color-体育: #e74c3c;
-    --color-财经: #f39c12;
-    --color-科技: #3498db;
-    --color-教育: #27ae60;
-    --color-时尚: #e91e63;
-    --color-军事: #607d8b;
-    --color-游戏: #9b59b6;
-    --color-房产: #16a085;
-    --color-娱乐: #e67e22;
-    --color-时政: #8e44ad;
+    /* 10 个分类标签颜色（莫兰迪色系：低饱和度） */
+    --color-体育: #c4a09a;
+    --color-财经: #bcaa8a;
+    --color-科技: #8b9eb5;
+    --color-教育: #8fa88f;
+    --color-时尚: #b8959f;
+    --color-社会: #8f938b;
+    --color-游戏: #9e8faa;
+    --color-房产: #82a89a;
+    --color-娱乐: #c4a088;
+    --color-时政: #9c8dab;
 
-    /* 3 种实体类型颜色 */
-    --entity-PER:  #3498db;
-    --entity-LOC:  #27ae60;
-    --entity-ORG:  #e67e22;
+    /* 3 种实体类型颜色（莫兰迪色系） */
+    --entity-PER:  #8b9eb5;
+    --entity-LOC:  #8fa88f;
+    --entity-ORG:  #c4a088;
 
     /* 尺寸 */
     --radius: 12px;
@@ -91,17 +97,24 @@
     padding: 36px 20px 8px;
   }
   .header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--primary), #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-family: 'Ma Shan Zheng', 'STXingkai', '华文行楷', 'KaiTi', '楷体', cursive, serif;
+    font-size: 4rem;
+    font-weight: 400;
+    color: #1a1a1a;
+    letter-spacing: 0.15em;
   }
-  .header p {
+  .header .subtitle {
     color: var(--text-secondary);
-    margin-top: 6px;
-    font-size: 0.95rem;
+    margin-top: 2px;
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .header .desc {
+    color: var(--text-secondary);
+    margin-top: 8px;
+    font-size: 0.9rem;
+    opacity: 0.8;
   }
 
   /* ═══════════════ 输入区 ═══════════════ */
@@ -116,6 +129,7 @@
     resize: vertical;
     transition: border-color 0.2s;
     line-height: 1.7;
+    background: var(--card-bg);
   }
   .input-area textarea:focus {
     outline: none;
@@ -134,7 +148,7 @@
     font-size: 0.85rem;
     color: var(--text-secondary);
   }
-  .char-count.warn { color: #e74c3c; }
+  .char-count.warn { color: #c4a09a; }
 
   /* 按钮 */
   .btn {
@@ -159,12 +173,12 @@
     cursor: not-allowed;
   }
   .btn-outline {
-    background: #fff;
+    background: var(--card-bg);
     color: var(--text-secondary);
     border: 2px solid var(--border);
   }
   .btn-outline:hover {
-    border-color: #ccc;
+    border-color: #c5bfb5;
     color: var(--text);
   }
 
@@ -195,7 +209,7 @@
     padding: 6px 14px;
     font-size: 0.82rem;
     background: var(--primary-light);
-    color: var(--primary);
+    color: var(--primary-hover);
     border: 1px solid transparent;
     border-radius: 20px;
     cursor: pointer;
@@ -206,7 +220,7 @@
     max-width: 200px;
   }
   .example-chip:hover {
-    background: #dde3ff;
+    background: #dce2e8;
     border-color: var(--primary);
   }
 
@@ -238,7 +252,7 @@
   .confidence-bar {
     flex: 1;
     height: 12px;
-    background: #eee;
+    background: #e5e2dc;
     border-radius: 6px;
     overflow: hidden;
   }
@@ -285,7 +299,7 @@
   .highlight-text {
     line-height: 2.2;
     padding: 12px;
-    background: #fafbfc;
+    background: #f4f1ec;
     border-radius: 8px;
     border: 1px solid var(--border);
     word-break: break-all;
@@ -324,11 +338,11 @@
 
   /* 错误提示 */
   .error-banner {
-    background: #fdf2f2;
-    color: #c0392b;
+    background: #f2ece8;
+    color: #9b6b6b;
     padding: 12px 18px;
     border-radius: 8px;
-    border: 1px solid #f5c6cb;
+    border: 1px solid #dcc8c0;
     margin-bottom: 16px;
     font-size: 0.9rem;
     display: none;
@@ -348,6 +362,7 @@
     color: var(--text-secondary);
     font-size: 0.82rem;
     padding: 30px 0;
+    opacity: 0.7;
   }
 
   /* ═══════════════ 响应式：移动端 ═══════════════ */
@@ -355,12 +370,14 @@
     .results {
       flex-direction: column;
     }
-    .header h1 { font-size: 1.5rem; }
+    .header h1 { font-size: 2.8rem; }
+    .header .subtitle { font-size: 1rem; }
     .card { padding: 20px; }
     .example-chip { max-width: 150px; font-size: 0.78rem; }
   }
   @media (max-width: 480px) {
     .container { padding: 12px 10px 40px; }
+    .header h1 { font-size: 2.4rem; }
     .input-meta { flex-direction: column; align-items: flex-start; }
     .btn { width: 100%; justify-content: center; }
   }
@@ -372,8 +389,9 @@
 
   <!-- ═══════════ Header ═══════════ -->
   <div class="header">
-    <h1>Semantic Insight</h1>
-    <p>基于 BERT 的中文文本分类 + 命名实体识别 — 联合推理演示</p>
+    <h1>语义洞察</h1>
+    <p class="subtitle">Semantic Insight</p>
+    <p class="desc">基于 BERT 的中文文本分类 + 命名实体识别 — 联合推理演示</p>
   </div>
 
   <!-- ═══════════ 错误提示 ═══════════ -->
@@ -439,7 +457,7 @@
 
   <!-- ═══════════ Footer ═══════════ -->
   <div class="footer">
-    Semantic Insight — 基于 PyTorch + BERT-base-chinese 的多任务 NLP 系统
+    语义洞察 Semantic Insight — 基于 PyTorch + BERT-base-chinese 的多任务 NLP 系统
   </div>
 
 </div>
@@ -448,25 +466,25 @@
 <!--  JavaScript 逻辑（可自由修改）                          -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <script>
-  /* ── 10 个分类的颜色映射 ── */
+  /* ── 10 个分类的颜色映射（莫兰迪色系）── */
   const CATEGORY_COLORS = {
-    "体育": "#e74c3c",
-    "财经": "#f39c12",
-    "科技": "#3498db",
-    "教育": "#27ae60",
-    "时尚": "#e91e63",
-    "军事": "#607d8b",
-    "游戏": "#9b59b6",
-    "房产": "#16a085",
-    "娱乐": "#e67e22",
-    "时政": "#8e44ad",
+    "体育": "#c4a09a",
+    "财经": "#bcaa8a",
+    "科技": "#8b9eb5",
+    "教育": "#8fa88f",
+    "时尚": "#b8959f",
+    "社会": "#8f938b",
+    "游戏": "#9e8faa",
+    "房产": "#82a89a",
+    "娱乐": "#c4a088",
+    "时政": "#9c8dab",
   };
 
-  /* ── 3 种实体类型的颜色 ── */
+  /* ── 3 种实体类型的颜色（莫兰迪色系）── */
   const ENTITY_COLORS = {
-    "PER": "#3498db",
-    "LOC": "#27ae60",
-    "ORG": "#e67e22",
+    "PER": "#8b9eb5",
+    "LOC": "#8fa88f",
+    "ORG": "#c4a088",
   };
 
   /* ── 工具函数 ── */
@@ -563,7 +581,7 @@
       return;
     }
 
-    const color = CATEGORY_COLORS[cls.label] || "#7f8c8d";
+    const color = CATEGORY_COLORS[cls.label] || "#8c8695";
     const pct = (cls.confidence * 100).toFixed(1);
 
     container.innerHTML = `
@@ -598,7 +616,7 @@
         <tbody>
     `;
     entities.forEach(ent => {
-      const color = ENTITY_COLORS[ent.type] || "#95a5a6";
+      const color = ENTITY_COLORS[ent.type] || "#8c8695";
       tableHTML += `
         <tr>
           <td><strong>${escapeHTML(ent.word)}</strong></td>
@@ -618,7 +636,7 @@
       if (ent.start > pos) {
         highlighted += escapeHTML(originalText.slice(pos, ent.start));
       }
-      const color = ENTITY_COLORS[ent.type] || "#95a5a6";
+      const color = ENTITY_COLORS[ent.type] || "#8c8695";
       highlighted += `<span class="hl-entity" style="background:${color}">${escapeHTML(originalText.slice(ent.start, ent.end))}</span>`;
       pos = ent.end;
     });

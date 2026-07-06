@@ -9,11 +9,11 @@ encoder:
 # 文本分类配置
 classifier:
   num_classes: 10
-  label_names: ["体育", "财经", "科技", "教育", "时尚", "军事", "游戏", "房产", "娱乐", "时政"]
+  label_names: ["体育", "财经", "科技", "教育", "时尚", "社会", "游戏", "房产", "娱乐", "时政"]
   dropout: 0.1
   learning_rate: 2e-5
   batch_size: 32
-  epochs: 3
+  epochs: 5
   warmup_ratio: 0.1
 
 # NER配置
